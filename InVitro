@@ -1,10 +1,12 @@
-// Code used for paper 'Falsifying computational models of angiogenesis through quantitative comparison with in vitro models'
-
+// Code used for paper 'Falsifying computational models of endothelial network formation through quantitative comparison with in vitro models'
+testmode=true;
 /* Start code */
 run("Fresh Start"); //reset settings
-close("*"); //close all images
-run("Collect Garbage"); //clean cache
-setBatchMode(true); // Open images in batchmode
+if (testmode==false) {
+	close("*"); //close all images
+	run("Collect Garbage"); //clean cache
+	setBatchMode(true); // Open images in batchmode
+}
 requires("1.33s");
 dir=getDirectory("Choose a directory with TIFs");
 dir2=getDirectory("Select an output folder");
@@ -16,9 +18,11 @@ branch_info=true; //Do you want to separate sprouts from segments/branches
 watershed=true; //Compensate for segmentation errors by weak contrast
 save_overview=true; //Save a result image with network characteristic overlays
 wellSize=3800; //Define ROI diameter in µm
-pixelSize=0.875 //µm
-timestep=15 //minutes
+pixelSize=0.875; //µm
+timestep=150; //minutes
+pixelUnit="µm";
 processFiles(dir);
+
 
 /* Find all files in all subfolders */
 function countFiles(dir){
@@ -40,6 +44,7 @@ function processFile(path){
 	if(endsWith(path,".tif")||endsWith(path,".png")||endsWith(path,".czi")||endsWith(path,".jpg")){
 		start=getTime();
 		open(path);
+		if(testmode==true){waitForUser("The timelapse should be opened. \nIf not, cancel and select a different directory.");}
 		run("Select None");
 		setOption("BlackBackground",true);
 		filename=getTitle();
@@ -49,10 +54,12 @@ function processFile(path){
 		if (unit=="pixels") {
 			pixelWidth=pixelSize;
 			pixelHeight=pixelSize;
-			unit="µm";}
+			unit=pixelUnit;}
+		if (Stack.getFrameInterval==0) {Stack.setFrameInterval(timestep);}
 		setVoxelSize(pixelWidth, pixelHeight, 1, unit); //avoid NaN in branch length due to NaN in z-unit
-		while (width>wellSize*2) { //reduce image size for images that are too large to save processing time
-			run("Scale...", "x=0.5 y=0.5 z=1.0 interpolation=Bilinear fill process create");
+		if(testmode==true){waitForUser("Are the pixelsize ("+pixelWidth+unit+") and timestep ("+Stack.getFrameInterval+" minutes) correct? \nIf not, cancel and adjust in image metadata or in line 21-23.");}
+		if (width>wellSize*2) { //reduce image size for images that are too large to save processing time
+			run("Scale...", "x="+wellSize/width+" y="+wellSize/width+" z=1.0 interpolation=Bilinear fill process create");
 			selectImage(img);
 			close();
 			img=getImageID();
@@ -73,7 +80,9 @@ function processFile(path){
 					maxMean=getResult("Mean",i);
 					channel=i+1;}}
 			run("Arrange Channels...","new="+channel+"");
-			run("Clear Results");}
+			run("Clear Results");
+			if(testmode==true){waitForUser("The multicoloured timelapse should be reduced to a single channel timelapse. \nIf not, cancel and remove the other channels manually.");}
+			}
 		if(is("grayscale")==false){
 			run("Grays");}
 			
@@ -82,12 +91,15 @@ function processFile(path){
 		if (save_overview) {
 			run("Scale...", "x=0.25 y=0.25 z=1.0 interpolation=Bilinear fill process create");
 			img2=getImageID();}
-			
+		if(testmode==true){waitForUser("The timelapse is duplicated to make the overview image.");}
+		
 		/* Select well */
 		selectImage(img);
 		if(roundWells==true){
 			makeOval(width/2-(wellSize/pixelWidth)/2,-(wellSize/pixelWidth-height)/2,wellSize/pixelWidth,wellSize/pixelWidth);
-			run("Crop","stack");}
+			run("Crop","stack");
+		if(testmode==true){waitForUser("The timelapse has been cropped for a round well. \nIf your timelapse is not round, cancel and \nchange roundWells==false in line 16.");}
+		}
 		else {run("Select All");}
 		run("Set Measurements...","area redirect=None decimal=0");
 		run("Measure");
@@ -124,6 +136,7 @@ function processFile(path){
 		Minor=newArray(size);
 		
 		/* Start segmentation */
+		if(testmode==true){waitForUser("Now the segmentation starts.");}
 		run("Duplicate...","ignore duplicate");
 		img3=getImageID();
 		run("Gaussian Blur...","sigma=10 scaled stack"); //remove high frequency signal
@@ -140,12 +153,13 @@ function processFile(path){
 		img=getImageID();
 		run("Restore Selection");
 		run("Gaussian Blur...","sigma=1 stack"); //Remove noise
-		run("Variance...","radius="+8.75/pixelWidth+" stack"); //Calculate variance of regions with radius 8.75µm
+		run("Variance...","radius=10 stack"); //Calculate variance of regions
 		run("Gaussian Blur...","sigma=3.5 scaled stack"); //Smooth result
 		run("Auto Threshold","method=Huang stack"); //Segment image
 		run("Clear Outside","stack");
 		rename("Binary");
 		bin=getImageID();
+		if(testmode==true){waitForUser("The image has been segmented and will now be scaled down to create a skeleton network.");}
 		run("Scale...", "x="+0.1*pixelWidth+" y="+0.1*pixelWidth+" interpolation=Bilinear average process create");
 		run("Auto Threshold","method=Huang dark stack");
 		saveAs("Tiff",dir2+filename+"_binary.tif");
@@ -168,6 +182,7 @@ function processFile(path){
 		for(i=1;i<size+1;i++){
 			setSlice(i);
 			run("Skeletonize","slice");}
+		if(testmode==true){waitForUser("The network should be skeletonized. \nIf the background has been skeletonized instead, cancel and \nadd or remove the // before the invert command on line 178.");}
 		skel=getImageID();
 		run("Analyze Particles...", "size=400-Infinity show=Masks stack"); //Remove small clusters from skeleton
 		selectImage(skel);
@@ -176,12 +191,14 @@ function processFile(path){
 		run("Restore Selection");
 		setBackgroundColor(255,255,255);
 		run("Clear Outside","stack");
+		if(testmode==true){waitForUser("The background should be removed around the field of interest. \nIf not, cancel and add or remove the // before the invert command in line 187 \nor setBackgroundColor to 0,0,0 on line 189.");}
 		saveAs("Tiff",dir2+filename+"_Skeleton.tif");
 		if (height*pixelWidth<wellSize-200){makeOval(0,-(wellSize-200-height*pixelWidth)/2*0.1,wellSize*0.1-20,wellSize*0.1-20);}
 		run("Area to Line");
 		run("Select None");
 		getPixelSize(nunit, npixelWidth, npixelHeight);
 		skel=getImageID();
+		if(testmode==true){waitForUser("Now the tool will extract all details of the skeleton for each timestep of the timelapse. \nThis could take a while when branch_info is true, in line 17, and the tool will extract \ninfo on whether branches are sprouts or segments.");}
 		for(i=0;i<size;i++){
 			Sprouts_n[i]=0;
 			Sprouts_length[i]=0;
@@ -296,6 +313,8 @@ function processFile(path){
 					Skeletons_n[i]=num_skel;}
 		run("Images to Stack", "name=Endpoints title=Endpoint");
 		run("Images to Stack", "name=Nodes title=Nodes");
+		if (testmode==true) {waitForUser("The tool has finished analyzing the skeleton and generated images \nof the endpoints and the nodes for the overview image.");}
+		if (save_overview==false) {if(isOpen("Endpoint")){selectImage("Endpoint");close();};if(isOpen("Nodes")){selectImage("Nodes");run("Close");}}
 		imgep=getImageID();
 		if(isOpen("Branch information")){
 			selectWindow("Branch information");
@@ -304,12 +323,14 @@ function processFile(path){
 			selectWindow("Results");
 			run("Close");}
 		selectImage(bin);
+		if (testmode==true) {waitForUser("Now the tool will start with the watershed step for the lacunae extraction");}
 	/* watershed */
 		if(watershed){
 			/* Remove small holes from watershed */
 		//	run("Invert","stack");
 			run("Analyze Particles...", "size=2000-20000 show=Masks stack");//extract the small holes that can be lost through strict watershed
 			sh=getImageID();
+			if (testmode==true) {waitForUser("The tool should have extracted all the small (2000-20000 µm²) lacunae from the segmented image. \nIf not, cancel and add or remove the // before the invert command in line 327");}
 			selectImage(bin);
 			run("Analyze Particles...", "size=20000-infinity show=Masks stack");
 			selectImage(bin);
@@ -320,9 +341,12 @@ function processFile(path){
 			run("Invert","stack");
 			run("Clear Outside", "stack");
 			run("Analyze Particles...","size=2000-Infinity show=Masks stack"); //remove small particles/single cells (<2000µm²) from binary
+			if (testmode==true) {waitForUser("The tool should have removed small (<2000 µm²) pieces of the network in preparation of the watershed. \nIf not, cancel and add or remove // in front of the invert command in line 338.");}
 			run("Invert","stack");
 			run("Distance Map","stack");
+			if (testmode==true) {waitForUser("A distance transform of the lacunae should have been generated with thick branches and blurry lacunae. \nIf the distance transform has been executed on the network branches instead, cancel and \nadd or remove // in front of the invert command in line 342.");}
 			dist=getImageID();
+			if (testmode==true) {waitForUser("The tool will segment the lacunae slice by slice. This will take a while.");}
 			if(size>1){
 				/* Find the maxima of the distance map slice by slice */
 				/*skip the first hour*/
@@ -341,18 +365,23 @@ function processFile(path){
 			selectImage(dist);
 			close();
 			run("Restore Selection");
+			run("Invert","stack");
 			run("Clear Outside","stack");
-			//run("Invert","stack");
 			stack=getImageID();
 			/* Add the watershed segmentation to the binary */
 			run("Select None");
 			selectImage(bin);
 			imageCalculator("Add stack",bin,stack);
+			if (testmode==true) {setSlice(size);waitForUser("The tool should have added a very thin line of the watershed to the segmented image. \nIf the tool has instead added the background of the watershed, cancel and \nadd or remove the // in front of the invert command in line 366.");}
 			selectImage(stack);
 			close();
 			rename("Binary");
 			bin=getImageID();
+			selectImage(sh);
+			//run("Invert","stack");
+			selectImage(bin);
 			imageCalculator("Subtract stack", bin,sh);
+			if (testmode==true) {waitForUser("The tool should have added the small lacunae extracted at the \nstart back to the segmented image. \nIf the tool has instead added the background of the small lacunae, cancel and \nadd or remove the // in front of the invert command in line 378.");}
 			selectImage(sh);
 			close();
 			run("Invert","stack");
@@ -367,8 +396,10 @@ function processFile(path){
 			else {makeOval(0,0,wellSize/pixelWidth,wellSize/pixelWidth);}
 			run("Enlarge...","enlarge=-5");
 			run("Clear Outside","stack");}
+		if (testmode==true) {waitForUser("The tool will now measure the lacunae.");}
 		run("Set Measurements...","area standard centroid center perimeter bounding fit shape feret's area_fraction stack nan add redirect=None decimal=3");
 		run("Analyze Particles...","size=4000-11300000  circularity=0.20-1.00 show=[Bare Outlines] display exclude clear summarize add stack");
+		if (testmode==true) {waitForUser("If the outlines are outlines of the branches instead of the lacunae, \ncancel and add or remove // in front of the invert command in line 383.");}
 		rename(filename+"_Outlines");
 		selectImage(bin);
 		close();
@@ -436,6 +467,7 @@ function processFile(path){
 			run("Next Slice [>]");
 			run("Magenta");
 			saveAs("Tiff", dir2+filename+"_result.tif");}
+		if (testmode==true) {waitForUser("The tool has created an overview image. LUTs can be adjusted to \npreference, or channels can be removed.");}
 		close("*"); //close all images
 		
 		/* Save the measurements */
@@ -475,10 +507,11 @@ function processFile(path){
 		if (nResults>0) {
 		selectWindow("Results");
 		saveAs("Results",dir2+filename+"_total_network_quantification_"+pixelWidth+unit+".csv");
+		if (testmode==true) {waitForUser("A table with all the output information has been generated \nand saved to the specified folder.");}
 		run("Close");
 		}
 		run("Collect Garbage");
-		finish=getTime();
-		minutes=(finish-start)/1000/60;
+	//	finish=getTime();
+	//	minutes=(finish-start)/1000/60;
 	//	print(filename+" has been analyzed in "+minutes+" minutes.\nThat is "+minutes/size*60+" seconds per frame.");
 		}}
