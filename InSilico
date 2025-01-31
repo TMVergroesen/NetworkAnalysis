@@ -25,7 +25,7 @@ save_overview=true; //Save a result image with overlays
 wellSize=3800; //Define ROI diameter in µm
 roundWells=true;//
 pixelSize=1.0; //µm
-stride = 30; //Define MCS stepsize
+stride = 60; //Define MCS stepsize
 pixelUnit="µm";
 imageExtension=".png";
 processFolders(dir);
