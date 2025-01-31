@@ -24,7 +24,7 @@ watershed=true; //Compensate for segmentation errors by weak contrast
 save_overview=true; //Save a result image with network characteristic overlays
 wellSize=3800; //Define ROI diameter in µm
 pixelSize=0.875; //µm
-timestep=150; //minutes
+timestep=600; //minutes
 pixelUnit="µm";
 processFiles(dir);
 
