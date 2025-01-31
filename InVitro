@@ -174,7 +174,7 @@ function processFile(path){
 				else {makeOval(0,0,wellSize*0.1,wellSize*0.1);}
 				run("Enlarge...","enlarge=-100");
 				run("Crop","stack");
-				setBackgroundColor(255,255,255);
+				setBackgroundColor(0,0,0);
 				run("Clear Outside","stack");}
 			else {run("Select All");}
 			run("Set Measurements...","area redirect=None decimal=0");
@@ -215,50 +215,48 @@ function processFile(path){
 				run("Analyze Particles...", "size=4000-Infinity show=Masks");
 				mask=getTitle();
 				run("Analyze Skeleton (2D/3D)","prune=none");
-				selectWindow("Tagged skeleton");
-				close();
 				if (nResults>0) {IJ.renameResults("Results","All skeletons");}
 				else {
 					print("No skeletons detected in slice "+i);
 					if(isOpen("Tagged skeleton")){close();}
 					if (isOpen(mask)){close();}
 					getDimensions(wth, hgt, cha, scs, frm);
-					newImage("Endpoints", "8-bit black", wth, hgt, 1);
+					if (branch_info) {newImage("Endpoints", "8-bit black", wth, hgt, 1);}
 					newImage("Nodes", "8-bit black", wth, hgt, 1);
 					continue}
-				selectWindow(mask);
-				run("Restore Selection");
-				setForegroundColor(0, 0, 0);
-				setBackgroundColor(255, 255, 255);
-				run("Fill", "slice");
-				run("Analyze Skeleton (2D/3D)", "prune=none show");
-				selectImage("Tagged skeleton");
-				run("Duplicate...", "title=Nodes");
+				selectWindow("Tagged skeleton");
 				setThreshold(63, 79);
 				setOption("BlackBackground", false);
 				run("Convert to Mask");
-				selectImage("Tagged skeleton");
-				setThreshold(23, 39);
-				setOption("BlackBackground", false);
-				run("Convert to Mask");
-				run("Find Maxima...", "prominence=50 light output=List");
-				X=newArray(nResults);
-				Y=newArray(nResults);
-				if (nResults>0) {
-					for (ii = 0; ii < nResults; ii++) {
-						X[ii]=getResult("X", ii);
-						Y[ii]=getResult("Y", ii);}
-						selectWindow("Results");
-						run("Close");}
-				else {print("No endpoints in slice "+i+1);
-					getDimensions(wth, hgt, cha, scs, frm);
-					newImage("Tagged skeleton", "8-bit black", wth, hgt, 1);}
-				selectImage("Tagged skeleton");
-				run("Invert");
-				rename("Endpoints");
+				rename("Nodes");
+				if (branch_info) {
+					selectWindow(mask);
+					run("Restore Selection");
+					setForegroundColor(0, 0, 0);
+					setBackgroundColor(255, 255, 255);
+					run("Fill", "slice");
+					run("Analyze Skeleton (2D/3D)", "prune=none show");
+					selectImage("Tagged skeleton");
+					setThreshold(23, 39);
+					setOption("BlackBackground", false);
+					run("Convert to Mask");
+					run("Find Maxima...", "prominence=50 light output=List");
+					X=newArray(nResults);
+					Y=newArray(nResults);
+					if (nResults>0) {
+						for (ii = 0; ii < nResults; ii++) {
+							X[ii]=getResult("X", ii);
+							Y[ii]=getResult("Y", ii);}
+							selectWindow("Results");
+							run("Close");}
+					else {print("No endpoints in slice "+i+1);
+						getDimensions(wth, hgt, cha, scs, frm);
+						newImage("Tagged skeleton", "8-bit black", wth, hgt, 1);}
+					selectImage("Tagged skeleton");
+					run("Invert");
+					rename("Endpoints");}
 				selectImage(mask);
 				close();
-				
 				/* Find the biggest skeletons */
 				IJ.renameResults("All skeletons","Results");
 				min_branch=400; //Skeletons below min_branch µm will not be considered
@@ -287,15 +285,13 @@ function processFile(path){
 											Sprouts_n[i]=Sprouts_n[i]+1;
 									//		print("The length of the sprout "+Sprouts_n[i]+" out of "+X.length+" endpoints is "+getResult("Branch length", iii)+" at coordinate "+X[iiii]+","+Y[iiii]+".");
 											test=0;
-											break
-										}
+											break}
 										else if (branch_X2==X[iiii]&&branch_Y2==Y[iiii]){
 											Sprouts_length[i]=((Sprouts_length[i]*Sprouts_n[i])+getResult("Branch length", iii))/(Sprouts_n[i]+1);
 											Sprouts_n[i]=Sprouts_n[i]+1;
 									//		print("The length of the sprout "+Sprouts_n[i]+" out of "+X.length+" endpoints is "+getResult("Branch length", iii)+" at coordinate "+X[iiii]+","+Y[iiii]+".");
 											test=0;
-											break
-										}
+											break}
 										else{test=1;}
 									}
 									if (test==1) {
@@ -359,7 +355,7 @@ function processFile(path){
 			if (testmode) {waitForUser("The tool will segment the lacunae slice by slice. This will take a while.");}
 			if(size>1){
 				/* Find the maxima of the distance map slice by slice */
-				/*skip the first hour*/
+				/* Skip the first hour */
 				for(i=1;i<floor(60/timestep)+1;i++){
 					getDimensions(newwidth, newheight,NULL,NULL,NULL);
 					newImage("Mask of Mask of Binary("+i+") Segmented", "8-bit black", newwidth, newheight, 1);
@@ -376,7 +372,7 @@ function processFile(path){
 			close();
 			run("Restore Selection");
 			run("Invert","stack");
-			run("Clear Outside","stack");
+			run("Clear Outside","stack");//*/
 			stack=getImageID();
 			/* Add the watershed segmentation to the binary */
 			run("Select None");
@@ -417,18 +413,16 @@ function processFile(path){
 			run("Set Measurements...","area standard centroid center perimeter bounding fit shape feret's area_fraction stack nan add redirect=None decimal=3");
 			run("Analyze Particles...","size=4000-11300000  circularity=0.20-1.00 show=[Bare Outlines] display exclude clear summarize add stack");
 			if (testmode) {waitForUser("If the outlines are outlines of the branches instead of the lacunae, \ncancel and add or remove // in front of the invert command in line 407.");}
-			rename(filename+"_Outlines");}
+			rename(filename+"_Outlines");
+			}
 		selectImage(bin);
 		close();
-		
 		/* Save the measurements */
 		if(roiManager("count")>0){roiManager("Save",dir2+filename+"_RoiSet.zip");}
 		if (nResults>0) {
-		selectWindow("Results");
-		saveAs("Results",dir2+filename+"_per_hole.csv");
-		run("Close");
-		}
-		
+			selectWindow("Results");
+			saveAs("Results",dir2+filename+"_per_hole.csv");
+			run("Close");}
 		/* Extract the Lacunae results */
 		if(size>1){IJ.renameResults("Summary of Binary","Results");}
 		else{IJ.renameResults("Summary","Results");}
@@ -447,7 +441,6 @@ function processFile(path){
 			Circularity[row]=getResult("Circ.",row);
 			Slice[row]=getResult("Slice", row);}
 		run("Clear Results");
-		
 		/* Add branch info and the lacunae info to a fresh results table */
 		for(i=0;i<size;i++){
 			Experiment[i]=filename;
@@ -459,10 +452,8 @@ function processFile(path){
 			selectWindow("Results");
 			saveAs("Results",dir2+filename+"_total_network_quantification_"+pixelWidth+unit+".csv");
 			if (testmode) {waitForUser("A table with all the output information has been generated \nand saved to the specified folder.");}
-			run("Close");
-		}
+			run("Close");}
 		run("Collect Garbage");
-		
 		/*Label everything in the image*/
 		if (save_overview) {
 			selectImage(img2);
@@ -483,8 +474,6 @@ function processFile(path){
 					setBackgroundColor(255,255,255);
 					run("Options...","iterations=1 count=1 do=Dilate stack");
 					run("Scale...", "x=3.5 y=3.5 z=1.0 interpolation=Bilinear fill process create");
-					makeRectangle((getWidth()-width)/2, (getHeight()-height)/2, width, height);
-					run("Crop");
 					selectWindow("Endpoints");
 					close();
 					setBackgroundColor(255,255,255);
@@ -495,8 +484,6 @@ function processFile(path){
 				setBackgroundColor(255,255,255);
 				run("Options...","iterations=1 count=1 do=Dilate stack");
 				run("Scale...", "x=3.5 y=3.5 z=1.0 interpolation=Bilinear fill process create");
-				makeRectangle((getWidth()-width)/2, (getHeight()-height)/2, width, height);
-				run("Crop");
 				selectWindow("Nodes");
 				close();
 				setBackgroundColor(255,255,255);
@@ -514,19 +501,15 @@ function processFile(path){
 				run("Convert to Mask", "method=Default background=Light");
 				if (skeleton) {
 					if (branch_info){run("Merge Channels...", "c1="+img2+" c2="+filename+"_Outlines c3="+filename+"_Skeleton-1.tif c4=Endpoints-1 c5=Nodes-1 create");}
-					else {run("Merge Channels...",  "c1="+img2+" c2="+filename+"_Outlines c3="+filename+"_Skeleton-1.tif c4=Nodes-1 create");}}
+					else {run("Merge Channels...",  "c1="+img2+" c2="+filename+"_Outlines c3="+filename+"_Skeleton-1.tif c4=Nodes-1 create");}
+					}
 				else {run("Merge Channels...",  "c1="+img2+" c2="+filename+"_Outlines create");}}
 			else {
 				if (skeleton) {
 					if (branch_info) {run("Merge Channels...",  "c1="+img2+" c2="+filename+"_Skeleton-1.tif c3=Endpoints-1 c4=Nodes-1 create");}
 					else {run("Merge Channels...",  "c1="+img2+" c2="+filename+"_Skeleton-1.tif c3=Nodes-1 create");}}
 				else{continue}}
-			run("Previous Slice [<]");
-			run("Previous Slice [<]");
-			run("Previous Slice [<]");
-			run("Previous Slice [<]");
-			run("Previous Slice [<]");
-			run("Previous Slice [<]");
+			setSlice(1);
 			run("Grays");
 			run("Next Slice [>]");
 			run("Yellow");
@@ -537,11 +520,11 @@ function processFile(path){
 			run("Next Slice [>]");
 			run("Magenta");
 			saveAs("Tiff", dir2+filename+"_result.tif");
-		if (testmode) {waitForUser("The tool has created an overview image. LUTs can be adjusted to \npreference, or channels can be removed.");}}
-		close("*"); //close all images
-		
-	//	finish=getTime();
-	//	minutes=(finish-start)/1000/60;
-	//	print(filename+" has been analyzed in "+minutes+" minutes.\nThat is "+minutes/size*60+" seconds per frame.");
+			if (testmode) {waitForUser("The tool has created an overview image. LUTs can be adjusted to \npreference, or channels can be removed.");}
 		}
+		close("*"); //close all images	
+		finish=getTime();
+		minutes=(finish-start)/1000/60;
+		print(filename+" has been analyzed in "+minutes+" minutes.\nThat is "+minutes/size*60+" seconds per frame.");
 	}
+}
