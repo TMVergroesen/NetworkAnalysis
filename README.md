@@ -1,6 +1,10 @@
 # FIJI script for automated cellular network timelapse analyses
-Code for automated network feature extraction for in vitro and in silico angiogenesis-like network formation timelapses used for the following publications:
-> https://www.biorxiv.org/content/10.1101/2024.08.06.606790v2.full
+Code for automated network feature extraction for in vitro and in silico angiogenesis-like network formation timelapses used for the following publication:
+
+
+**Falsifying computational models of endothelial cell network formation through quantitative comparison with in vitro models**
+
+Vergroesen TM, Vermeulen V, Merks RMH (2025) PLOS Computational Biology 21(4): e1012965. [https://doi.org/10.1371/journal.pcbi.1012965](https://doi.org/10.1371/journal.pcbi.1012965)
 
 
 # Code design
