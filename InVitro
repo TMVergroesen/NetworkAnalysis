@@ -35,7 +35,7 @@ macro "In vitro automated feature extraction" {
 		close("*"); //close all images
 		run("Collect Garbage"); //clean cache
 		run("Fresh Start"); //reset settings
-		dir=getDirectory("Choose a directory with TIFs");
+		dir=getDirectory("Choose a directory with image files");
 		count=0;
 		countFiles(dir);
 		n=0;
@@ -62,6 +62,7 @@ macro "In vitro automated feature extraction" {
 		start=getTime();
 		if (!currentImage) {open(path);
 			if(testmode){waitForUser("The timelapse should be opened. \nIf not, cancel and select a different directory.");}}
+		run("8-bit");
 		run("Select None");
 		setOption("BlackBackground",true);
 		filename=getTitle();
