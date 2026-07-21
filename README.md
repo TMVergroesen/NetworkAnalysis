@@ -3,7 +3,6 @@ Code for automated network feature extraction for in vitro and in silico angioge
 
 
 **Falsifying computational models of endothelial cell network formation through quantitative comparison with in vitro models**
-
 Vergroesen TM, Vermeulen V, Merks RMH (2025) PLOS Computational Biology 21(4): e1012965. [https://doi.org/10.1371/journal.pcbi.1012965](https://doi.org/10.1371/journal.pcbi.1012965)
 
 
@@ -12,11 +11,10 @@ There are two code files in this project: "InVitro.ijm" and "InSilico.ijm" to an
 
 # Getting started
 1.  Download the example timelapse or model output in a folder you will be able to locate easily
-2.  Open the code in FIJI or ImageJ, preferably a recent version
-3.  Turn off Batch mode, "setBatchMode(true)", so you can see what is happening
-4.  Turn on "save_overview=true" to appreciate the output image
-5.  Turn on "testmode"=true" to activate all checkpoints
-6.  Run the code
-7.  You will be asked to select a directory which contains your timelapse(s)
-8.  You will be asked to select a folder to store the output data
-9.  Because of testmode, the code will pauze after every step. Differences in FIJI versions or settings can cause the segmentation to fail. If any of the checkpoints fail, change the code according to the suggestion and run it again.   
+2.  Open FIJI/ImageJ, preferably a recent version
+3.  Go to Plugins --> Install... and install the macro's and restart FIJI/ImageJ
+4.  Go to Plugins and scoll all the way down to find the newly installed plugins
+5.  Start up the plugin and navigate through the options
+6.  You will be asked to select a directory which contains your timelapse(s)
+7.  You will be asked to select a folder to store the output data
+8.  If testmode is activated, the code will pauze after every step. Differences in FIJI versions or settings can cause the code to fail. If any of the checkpoints fail, change the code according to the suggestion and repeat from step 3
